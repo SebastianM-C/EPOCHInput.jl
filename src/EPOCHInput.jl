@@ -1,5 +1,7 @@
 module EPOCHInput
 
+export parse_input
+
 using Unitful
 using PhysicalConstants.CODATA2018: c_0, ε_0, μ_0, m_e, e
 using BangBang
