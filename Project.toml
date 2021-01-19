@@ -3,7 +3,15 @@ uuid = "691e61f8-6502-44a1-a143-5276a0aa0dc4"
 authors = ["Sebastian Micluța-Câmpeanu <m.c.sebastian95@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
+PhysicalConstants = "5ad8b20f-a522-5ce9-bfc9-ddf1d5bda6ab"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
 [compat]
+BangBang = "0.3"
+PhysicalConstants = "0.2"
+Unitful = "1.0"
 julia = "1.5"
 
 [extras]
