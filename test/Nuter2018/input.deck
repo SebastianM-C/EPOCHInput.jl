@@ -1,0 +1,143 @@
+begin:control
+  nx = 640
+  ny = 512
+  nz = 512
+
+  # Final time of simulation
+  t_end = 130 * femto
+
+  # Size of domain
+  x_min =  0 * nano             #simulation starts in 0 (more convenient for introducing focalization)
+  x_max =  19 * nx * nano
+  y_min = -19 / 2 * ny * nano
+  y_max =  19 / 2 * ny * nano
+  z_min = -19 / 2 * nz * nano
+  z_max =  19 / 2 * nz * nano
+
+  stdout_frequency = 60
+end:control
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = open
+  bc_y_min = open
+  bc_y_max = open
+  bc_z_min = open
+  bc_z_max = open
+end:boundaries
+
+begin:constant
+  # Laser parameters
+  lambda0 = 800 * nano
+  omega = 2 * pi * c / lambda0
+  T_l = lambda0 / c                   # oscillation period (can be omitted if you don't give the pulse duration in terms of it)
+  tau_0 = 6 * T_l                     # pulse duration
+  a0 = 1
+  w_0 = 2 * micro                     # Beam waist size
+
+  # radial coordinate
+  r = sqrt(y^2 + z^2)
+
+  # Parameters used for domain shape
+  # Plasma disk
+  ri = 6.9 / 2 * micro                    # disk radius
+  xi = x_min + lambda0 / (2 * pi) * 50    # left face
+  xo = xi + 1.52 * micro                  # right face
+
+  # Laguerre-Gauss Mode
+  m = 1
+  p = 0
+  Cpm = 1 # sqrt(p!/(abs(m)+p)!), add it by hand!!!
+
+  # Laguerre-Gauss specific phase
+  LG_phase = atan2(y,z)
+
+  # Number density
+  n = 1.74e25
+
+  # Focusing the Beam (for this to work properly set x_min = 0.0):
+
+  # Focal point
+  f_x = (xi + xo)/2 # This must be changed! Expressions are written such that putting 0 works.
+
+  # Reyleigh length
+  Z_R = (pi * (w_0)^2) / lambda0
+
+  #spot size evolution
+  W_x = w_0 * sqrt(1 + (f_x / Z_R)^2)
+
+  # Inverse radius of curvature
+  R_cinv = f_x / ((Z_R)^2 + (f_x)^2)
+
+  #Guoy phase
+  g_phase = atan(f_x / Z_R)
+end:constant
+
+begin:laser
+  boundary = x_min
+  lambda = lambda0
+  amp = a0 / lambda0 * 2 * pi * me*c^2/qe
+
+  phase = - m * LG_phase + (2.0*pi/lambda0) * (R_cinv*r^2/2.0) - (2*p + abs(m) + 1) * g_phase
+
+  # Spatial profile (m=p=0 is just simple Gauss)
+  profile = Cpm * (sqrt(2)*r/w_0)^abs(m) * (w_0/W_x) * gauss(r,0,W_x)           # Also multiply by L_p|m|(2*r^2/W_x) when it is necessary!
+                                                                                # L_0|m| (x) = 1
+                                                                                # L_1|m| (x) = -x + |m| + 1
+  # Time profiles:
+
+  # Cos^2
+  t_profile = if((time gt 0*tau_0) and (time lt tau_0), cos(pi*(time - tau_0/2)/tau_0)^2, 0.0)
+
+  # Gaussian
+  # t_profile = gauss(time, 2*tau_0, tau_0)
+end:laser
+
+begin:species
+   name = electron
+   charge = -1.0
+   mass = 1.0
+   npart_per_cell = 10
+   temperature_ev = 0.0
+
+   # Fill the whole domain with plasma
+   # number_density = n
+
+   # Plasma disk definition
+   number_density = if((x gt xi) and (x lt xo) and (r lt ri), n, 0.0)
+end:species
+
+
+begin:species
+   name = proton
+   charge = 1.0
+   mass = 1836
+   npart_per_cell = 10
+   number_density = number_density(electron)
+   # immobile = T
+end:species
+
+begin:output
+  name = normal
+
+  # Number of timesteps between output dumps
+  dt_snapshot = 5 * femto
+
+  # Properties on grid
+  grid = always
+  ex = always
+  ey = always
+  ez = always
+
+  # Properties at particle positions
+  particle_grid = always
+  px = always
+  py = always
+  pz = always
+
+  id = always
+  particle_weight = always
+
+  number_density = always + species
+  average_particle_energy = always + species
+end:output

@@ -1,0 +1,132 @@
+begin:constant
+  #laser parameters (I = 10^22 W/cm^2, W_L = 25 J) CODE:MDO
+  lambda0 = 1 * micron
+  a0 = 85
+  w0 = 2.5 * micron
+  tau0 = 20 * femto
+
+  #plasma parameters
+  n_cr = critical(2 * pi *c / lambda0)
+  n_bulk = 100 * n_cr
+  n_ch = 20 * n_cr
+
+  #target thickness 11 microns inner radius 2.72 microns
+  R_ch = 0.2*w0
+  d_bulk = 3 * micron
+  delta_R_ch = 0.0 * w0
+  L_ch = 15 * micron
+
+  #general
+  r = sqrt(y^2 + z^2)
+  x0 = 0.0
+
+  # Laguerre-Gauss Mode
+  m = 0
+  p = 0
+  Cpm = 1 # sqrt(p!/(abs(m)+p)!), add it by hand!!!
+
+  # Laguerre-Gauss specific phase
+  LG_phase = atan2(y,z)
+end:constant
+
+begin:control
+  #grid
+  nx = 450
+  ny = 360
+  nz = 360
+
+  #simulation time
+  t_end = 100 * femto
+
+  #domain size
+
+  x_min = 0.0
+  x_max = L_ch
+  y_min = - 6.0 * micron
+  y_max = -y_min
+  z_min = y_min
+  z_max = -y_min
+
+  stdout_frequency = 20
+end:control
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = simple_outflow
+  bc_y_min = periodic
+  bc_y_max = periodic
+  bc_z_min = periodic
+  bc_z_max = periodic
+end:boundaries
+
+begin:laser
+  boundary = x_min
+  lambda = lambda0
+  amp = a0 / lambda0 * 2 * pi * me*c^2/qe
+  phase = - m * LG_phase
+
+  profile = Cpm * (sqrt(2)*r/w0)^abs(m) * gauss(r, 0.0, w0)
+
+  t_profile = gauss(time, 2 * tau0, tau0)
+end:laser
+
+begin:qed
+  use_qed = T
+  qed_start_time = 0
+  produce_photons = T
+  qed_table_location = /epoch-4.17.10/epoch3d/src/physics_packages/TABLES
+end:qed
+
+begin:species
+  #synchroton photons
+  name = photon
+  nparticles = 0
+  dump = T
+  identify:photon
+end:species
+
+begin:species
+  #electrons
+  name = electron
+  # charge = -1.0
+  # mass = 1.0
+  temp = 0.0
+  dump = T
+  npart_per_cell = 18 #originally 15
+
+  number_density = if(r lt (R_ch + delta_R_ch + d_bulk), n_bulk, 0.0) #originally without delta (note:in article d_bulk<3micron affects results)
+  number_density = if(r lt (R_ch + delta_R_ch), n_ch, number_density(electron))
+  number_density = if((x lt x0) and (x gt L_ch), 0.0, number_density(electron))
+
+  #for QED effects to work
+  identify:electron
+end:species
+
+begin:species
+  #carbon ions
+  name = CH
+  charge = 7.0
+  mass = 13 * 1836.2
+  temp = 0.0
+  dump = T
+  npart_per_cell = 6 #originally 5
+
+  number_density = number_density(electron) / 7
+end:species
+
+begin:output
+  #timesteps between output dumps
+  dt_snapshot = 10.0 * femto
+
+  # Properties on grid
+  grid = always
+
+  # Properties at particle positions
+  particle_grid = always
+  px = always + species
+  py = always + species
+  pz = always + species
+
+  number_density = always + species
+  average_particle_energy = always + species
+end:output
