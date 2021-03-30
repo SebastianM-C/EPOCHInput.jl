@@ -2,7 +2,7 @@ function parse_input(file)
     inside_block = false
     block_type = Symbol()
     global_p = Dict{Symbol,Any}()
-    current_p = NamedTuple()
+    current_p = Dict{Symbol,Any}()
     prev_line = ""
 
     for line in eachline(file)
@@ -29,12 +29,12 @@ function parse_input(file)
                 inside_block = false
                 # handle repeted blocks with same type
                 if block_type == :species
-                    block_name = Symbol(string(block_type) * "_" * current_p.name)
+                    block_name = Symbol(string(block_type) * "_" * get(current_p, :name, "invalid"))
                     global_p = push!!(global_p, block_name=>current_p)
                 else
                     global_p = push!!(global_p, block_type=>current_p)
                 end
-                current_p = NamedTuple()
+                current_p = Dict{Symbol,Any}()
                 block_type = Symbol()
                 continue
             end
