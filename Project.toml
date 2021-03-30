@@ -1,7 +1,7 @@
 name = "EPOCHInput"
 uuid = "691e61f8-6502-44a1-a143-5276a0aa0dc4"
 authors = ["Sebastian Micluța-Câmpeanu <m.c.sebastian95@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
